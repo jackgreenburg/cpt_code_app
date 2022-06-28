@@ -560,7 +560,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if not query:
             return None, None, 0
         # dont forget about adjustable path
-        numResults, search_out = parser("data/index", query, fields, page=page+1, limit=5)
+        numResults, search_out = parser("/dartfs/rc/lab/V/VaickusL_slow/EDIT_Interns/users/greenburg/data/index", query, fields, page=page+1, limit=5)
         indices = [sO["index"] for sO in search_out]
         lenLimit = 500
 
@@ -644,6 +644,16 @@ def initiate_app(port: int=8040, debug: bool=False):
             return index, 0, fText
         else:  # handle first call (nothing selected)
             raise PreventUpdate
+    
+    @app.callback(
+        Output('search-input', 'disabled'),
+        Output('search-input', 'placeholder'),
+        Input('algo-dropdown', 'value'))
+    def update_searchbox(algo_value):
+        if algo_value == "38 most common, total":
+            return False, "Search for report"
+        else:
+            return True, "Corpus search not available for this model"
 
     @app.callback(
         Output("collapse", "is_open"),
@@ -669,7 +679,6 @@ def initiate_app(port: int=8040, debug: bool=False):
         if not n_clicks:
             raise PreventUpdate
         return dcc.send_data_frame(pd.DataFrame(user_assignments).to_csv, "user_assignments.csv")
-
 
 
     # Run app and display result in the notebook
