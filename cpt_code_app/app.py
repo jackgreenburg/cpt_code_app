@@ -102,10 +102,10 @@ def graph_info(data_obj, reportVal: int, hideCode: bool=False, model_val: int=-1
         probas = [result["pp"]["probas"][reportVal] for result in data_obj.results]
         preds = [result["pp"]["preds"][reportVal] for result in data_obj.results]
 
-    classifications = data_obj.allData["y"].iloc[reportVal].values
+    classifications = [data_obj.allData["y"][code+" "].iloc[reportVal] for code in data_obj.codes]
 
     data = {"prediction": probas}
-    data["model"] = [i for i in range(len(probas))]
+#     data["model"] = [i for i in range(len(probas))]
     data["code"] = data_obj.codes
 
     if not hideCode:
@@ -136,9 +136,14 @@ def graph_info(data_obj, reportVal: int, hideCode: bool=False, model_val: int=-1
     # construct hover text
     hoverText = [0 for _ in range(len(df))]
     for i in range(len(df)):
-        hoverText[i] = f"Model No.={df['model'][i]}<br>"                        f"For CPT Code={df['code'][i]}<br>"                        f"Prediction={round(df['prediction'][i], 3)}<br>"                        f"Status={df['status'][i]}<br>"
+        hoverText[i] = (
+#             f"Model No.={df['model'][i]}<br>"
+            f"For CPT Code={df['code'][i]}<br>"
+            f"Prediction={round(df['prediction'][i], 3)}<br>"
+            f"Status={df['status'][i]}<br>"
+        )
     # add points
-    fig.add_trace(Scatter(x = df["model"],
+    fig.add_trace(Scatter(x = df["code"],
                           y = df["prediction"],
                           mode = 'markers',
                           marker_color = df["color"],
@@ -184,7 +189,7 @@ def initiate_app(port: int=8040, debug: bool=False):
     codes = dataset["y"].columns.values
     codesClean = np.array([code[:-1] for code in dataset["y"].columns.values])
 
-    with open("/dartfs/rc/lab/V/VaickusL_slow/EDIT_Interns/users/greenburg/data/cpt_codes.json", "r") as f:
+    with open("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/cpt_codes.json", "r") as f:
         codeDict = json.loads(f.read())
     
     # instantiate data manager
@@ -195,11 +200,21 @@ def initiate_app(port: int=8040, debug: bool=False):
 
     # add 5 code total model to data manager
     dx_total = "total"
-    d1.set(name="primary codes, total", dataset=dataset, dx_total=dx_total, path="/dartfs/rc/lab/V/VaickusL_slow/EDIT_Interns/users/greenburg/data/total_pathologist_models")
+    d1.set(
+        name="primary codes, total", 
+        dataset=dataset, 
+        dx_total=dx_total, 
+        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_pathologist_models"
+    )
 
     # add models trained on whole reports to data manager
     dx_total = "total"
-    d1.set(name="38 most common, total", dataset=dataset, dx_total=dx_total, path="/dartfs/rc/lab/V/VaickusL_slow/EDIT_Interns/users/greenburg/data/total_code_models")
+    d1.set(
+        name="38 most common, total",
+        dataset=dataset, 
+        dx_total=dx_total, 
+        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_code_models"
+    )
 
     # add models trained on only diagnostic section to data manager
     # on second thought, don't, dx needs to be retrained...
@@ -228,7 +243,7 @@ def initiate_app(port: int=8040, debug: bool=False):
             ]),
             dbc.Col([
                 dbc.Row([
-                    dbc.Label("Hide code", className="mr-1"),
+                    dbc.Label("Hide original assignment", className="mr-1"),
                     dbc.Checklist(options=[{"value": 1}],
                                 value=[1],
                                 id="code-toggle",
@@ -398,7 +413,8 @@ def initiate_app(port: int=8040, debug: bool=False):
         Output('code-dropdown', 'options'),
         Input('scatter-graph', 'clickData'),
         Input('algo-dropdown', 'value'),
-        State('model-dropdown', 'value'))
+        State('model-dropdown', 'value'),
+        prevent_initial_call=True)
     def updateModel(click_data, algo_value, value):
         """
         Callback to update current model in dropdown when changed through scatter plot
@@ -406,16 +422,17 @@ def initiate_app(port: int=8040, debug: bool=False):
         :return int: value --> model value
         """
         print(algo_value)
-        if algo_value:
+        if algo_value != d1.current:
             d1.set(algo_value)
+            value = 0
+        else:
+            value = d1.codes.index(click_data['points'][0]['x'])
 
         filter_options = [{"label": f"{code}: {codeDict[code]}", "value": i} for i, code in enumerate(d1.codes)]
 
         assignment_options = [{"label": f"{c}: {codeDict[c]}", "value": c} for c in d1.codes]
 
         options = [{'label': f'SHAP values for code {code}', 'value': i} for i, code in enumerate(d1.codes)]
-        if click_data:
-            return int(click_data['points'][0]['x']), options, filter_options, assignment_options
         return int(value), options, filter_options, assignment_options
 
     # update info
@@ -427,8 +444,7 @@ def initiate_app(port: int=8040, debug: bool=False):
     def updateInfo(model_val, reportVal, hideCode):
         """Update information section"""
 
-        model_val = int(model_val)
-        output_index = None
+        model_val = output_index = int(model_val)
 
         # get correct codes
         correctCodesIndex =  np.where(d1.allData["y"].iloc[reportVal] == 1)[0]
@@ -443,14 +459,12 @@ def initiate_app(port: int=8040, debug: bool=False):
             correctCodes = [codes[index][:-1] for index in correctCodesIndex]
             prediction = d1.results[model_val]["pp"]["preds"][reportVal]
 
-
         # calculate predictions
-#         prediction = d1.results[model_val]["best_model"].predict(d1.allData['count_mat'][reportVal], output_margin=False)[0]
+#         prediction = d1.results[model_val]["best_model"].predict(d1.allData['count_mat'][reportVal], output_margin=False)[0]        
         
-        
-        blockText = f"Prediction: {('does not contain', 'contains')[prediction]} code {d1.codes[model_val]}"
+        blockText = f"Prediction: {('does not contain', 'contains')[prediction]} code {d1.codes[output_index]}"
         if len(d1.results) != 1:
-            blockText += get_status(prediction, model_val in correctCodesIndex)
+            blockText += get_status(prediction, d1.codes[model_val] in correctCodes)
         elif d1.results[0]["best_model"].objective == "multi:softprob":
             codes_5 = d1.codes
             correct_indices = np.where([code in correctCodes for code in codes_5])[0]
@@ -560,7 +574,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if not query:
             return None, None, 0
         # dont forget about adjustable path
-        numResults, search_out = parser("/dartfs/rc/lab/V/VaickusL_slow/EDIT_Interns/users/greenburg/data/index", query, fields, page=page+1, limit=5)
+        numResults, search_out = parser("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/index", query, fields, page=page+1, limit=5)
         indices = [sO["index"] for sO in search_out]
         lenLimit = 500
 
@@ -625,7 +639,7 @@ def initiate_app(port: int=8040, debug: bool=False):
                 y = d1.allData["y"][d1.codes[filterModel] + " "],
             )
 
-            if d1.current == "5code_total":
+            if d1.results[0]["best_model"].objective == "multi:softprob":
                 filter_kwargs["preds"] = d1.results[0]["pp"]["preds"][filterModel]
             else:
                 filter_kwargs["preds"] = d1.results[filterModel]["pp"]["preds"]
