@@ -11,7 +11,7 @@ PACKAGES=[
     "pandas",
     "whoosh",
     "shap",
-    "plotly"
+    "plotly",
     "fire"
 ]
 
