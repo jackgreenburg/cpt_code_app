@@ -5,13 +5,14 @@ import os
 
 PACKAGES=[
     "xgboost==1.3.3",
-    "dash",
+    "dash==1.20.0",
+    "dash-bootstrap-components==0.12.2",
     "numpy",
     "pandas",
     "whoosh",
     "shap",
     "plotly"
-    
+    "fire"
 ]
 
 with open('README.md','r', encoding='utf-8') as f:
