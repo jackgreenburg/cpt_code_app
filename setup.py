@@ -4,20 +4,20 @@ import subprocess
 import os
 
 PACKAGES=[
-    "xgboost==1.3.3",
-    "dash==1.20.0",
-    "dash-bootstrap-components==0.12.2",
-    "flask==1.1.2",
-    "jinja2==2.11.3",
-    "markupsafe==1.1.1",
-    "itsdangerous==2.0.1", 
-    "werkzeug==1.0.1",
+    "xgboost==1.3.3", 
+    "dash",#==1.20.0",
+    "dash-bootstrap-components", #==0.12.2",
+    #"flask==1.1.2",
+    #"jinja2==2.11.3",
+    #"markupsafe==1.1.1",
+    #"itsdangerous==2.0.1", 
+    #"werkzeug==1.0.1",
     "numpy",
     "matplotlib",
     "pandas",
     "whoosh",
     "shap",
-    "plotly==4.14.3",
+    #"plotly==4.14.3",
     "fire"
 ]
 

@@ -9,11 +9,11 @@ from .utils import load_dataset, load_pickles
 from .manager import DataManager
 from .text import plot
 
-from dash import Dash
+from dash import Dash, dcc, html, dash_table
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
-import dash_html_components as html
-import dash_table
+#import dash_core_components as dcc
+#import dash_html_components as html
+#import dash_table
 from dash.exceptions import PreventUpdate
 import fire
 import numpy as np
@@ -224,7 +224,7 @@ def initiate_app(port: int=8040, debug: bool=False):
 
     report_index = 17
     # Build App
-    app = Dash(__name__, external_stylesheets=[dbc.themes.SUPERHERO])
+    app = Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
 
     app.layout = html.Div([
         dbc.Navbar([
@@ -302,7 +302,7 @@ def initiate_app(port: int=8040, debug: bool=False):
                             dcc.Download(id="download-data"),
                         ])
                     ], style={'margin-bottom': 5}),
-                    dbc.FormGroup([
+                    dbc.Row([
                         dcc.Dropdown(
                             id='code-dropdown',
                             options = [{"label": f"{c}: {d}", "value": c} for c, d in codeDict.items()],
@@ -311,7 +311,7 @@ def initiate_app(port: int=8040, debug: bool=False):
                         ),
                     ]),
                     dbc.Label("Filter results:", id="form-text"),
-                    dbc.FormGroup([
+                    dbc.Row([
                         dbc.Col([
                             dbc.Label("Restrict to:"),
                             dbc.RadioItems(
@@ -347,7 +347,7 @@ def initiate_app(port: int=8040, debug: bool=False):
                                 style={"margin-left": "5px", "margin-right": "10px"}
                             ),
                         ], width=8)
-                    ], row = True),
+                    ]),
                     dbc.Button("Next report", id="next-button", n_clicks=0, className="ml-auto", style={'float': 'right','margin': 'auto'}, color="success"),
                 ]), outline=True, color="primary", style={"padding": ".5rem"}),
                 id="collapse",
@@ -414,7 +414,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         Input('scatter-graph', 'clickData'),
         Input('algo-dropdown', 'value'),
         State('model-dropdown', 'value'),
-        prevent_initial_call=True)
+        )#prevent_initial_call=True)
     def updateModel(click_data, algo_value, value):
         """
         Callback to update current model in dropdown when changed through scatter plot
@@ -425,7 +425,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if algo_value != d1.current:
             d1.set(algo_value)
             value = 0
-        else:
+        elif click_data:
             value = d1.codes.index(click_data['points'][0]['x'])
 
         filter_options = [{"label": f"{code}: {codeDict[code]}", "value": i} for i, code in enumerate(d1.codes)]
