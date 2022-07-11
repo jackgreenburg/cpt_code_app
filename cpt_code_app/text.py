@@ -141,7 +141,6 @@ def text(explanation, displayWords=None, num_starting_labels=0, group_threshold=
     value_dict : Dict
         Dictionary of words corresponding to their SHAP value. For the purpose of coloring in the text section.
     """
-    from IPython.core.display import display, HTML
 
     def values_min_max(values, base_values):
         """ Used to pick our axis limits.
