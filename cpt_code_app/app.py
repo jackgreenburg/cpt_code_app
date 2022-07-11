@@ -198,15 +198,6 @@ def initiate_app(port: int=8040, debug: bool=False):
     # create dict to store user preds
     user_assignments = {}
 
-    # add 5 code total model to data manager
-    dx_total = "total"
-    d1.set(
-        name="primary codes, total", 
-        dataset=dataset, 
-        dx_total=dx_total, 
-        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_pathologist_models"
-    )
-
     # add models trained on whole reports to data manager
     dx_total = "total"
     d1.set(
@@ -214,6 +205,15 @@ def initiate_app(port: int=8040, debug: bool=False):
         dataset=dataset, 
         dx_total=dx_total, 
         path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_code_models"
+    )
+
+    # add 5 code total model to data manager
+    dx_total = "total"
+    d1.set(
+        name="primary codes, total", 
+        dataset=dataset, 
+        dx_total=dx_total, 
+        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_pathologist_models"
     )
 
     # add models trained on only diagnostic section to data manager
