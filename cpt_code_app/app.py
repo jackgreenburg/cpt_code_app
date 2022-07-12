@@ -11,21 +11,16 @@ from .text import plot
 
 from dash import Dash, dcc, html, dash_table
 import dash_bootstrap_components as dbc
-#import dash_core_components as dcc
-#import dash_html_components as html
-#import dash_table
 from dash.exceptions import PreventUpdate
 import fire
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import shap
 from dash.dependencies import Input, Output, State
 from plotly.graph_objects import Figure, Scatter
 from whoosh.index import open_dir
 from whoosh.qparser import MultifieldParser
 
-# JupyterDash.infer_jupyter_proxy_config()
 
 def parser(path: str, query_string: str, field_list: List[str], page: int=1, limit: int=10) -> Tuple[int, List[Dict]]:
     """
@@ -91,7 +86,7 @@ def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: Lis
     return np.intersect1d(value_indices, bool_indices)
 
 
-def graph_info(data_obj, reportVal: int, hideCode: bool=False, model_val: int=-1) -> Figure:
+def graph_info(data_obj, reportVal: int, hideCode: bool=False, model_val: int=-1, sort_by="prediction") -> Figure:
     # if multi output the ["proba"] is an array that is now inside array probas
     # if multi output the ["test"] is an index value
     # XXX
@@ -118,11 +113,15 @@ def graph_info(data_obj, reportVal: int, hideCode: bool=False, model_val: int=-1
 
     df = pd.DataFrame(data)
     # sort dataframe
-    df = df.sort_values("prediction").reset_index(drop=True)
+    assert sort_by in ("code","prediction")
+    df = df.sort_values(sort_by).reset_index(drop=True)
 
     fig = Figure()
     fig.update_yaxes(tickvals=[0, .5, 1], zeroline=False, range=[-.05, 1.05], linecolor="lightgray", gridcolor="gainsboro")
-    fig.update_xaxes(showline=True, zeroline=False, tickvals=[], gridcolor="purple")#, ticktext=df["code"], tickangle = 45,)
+    if len(data_obj.codes) <= 10:
+        fig.update_xaxes(showline=True, showgrid=False, zeroline=False, tickvals=df["code"], gridcolor="purple")#, ticktext=df["code"])
+    else:
+        fig.update_xaxes(showline=True, showgrid=False, zeroline=False, tickvals=[], gridcolor="purple")
     fig.update_layout(margin=dict(l=20, r=20, t=20, b=20),
                       legend_title="",
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
@@ -266,7 +265,7 @@ def initiate_app(port: int=8040, debug: bool=False):
                         dbc.Label("Index of path report:"),
                         dbc.Input(id="path-num-input", type="number", value=report_index, debounce=True, style={'margin-bottom': 10}),
                         dbc.Label("All predictions"),
-                        dcc.Graph(figure=graph_info(d1, report_index),
+                        dcc.Graph(figure=graph_info(d1, report_index, sort_by="code"),
                                 style={'display': 'inline-block', "width": "100%", "height": "350px", "border": 0},
                                 id='scatter-graph'),
                     ], outline=True, color="primary", style={'height': "560px", "padding": ".5rem", "margin-bottom": "15px", "margin-top": "7.5px"}),
@@ -556,10 +555,11 @@ def initiate_app(port: int=8040, debug: bool=False):
         Output('scatter-graph', 'figure'),
         Input('path-num-input', 'value'),
         Input('code-toggle', 'value'),
-        Input('algo-dropdown', 'value'),
+        Input('code-dropdown', 'options'),  # wait for output of updateModel
+        State('algo-dropdown', 'value'),
         State('model-dropdown', 'value'))
-    def updateGraph(reportVal, codeMode, algo_val, model_val):
-        fig = graph_info(d1, reportVal, bool(codeMode), model_val)
+    def updateGraph(reportVal, codeMode, _options, algo_val, model_val):
+        fig = graph_info(d1, reportVal, bool(codeMode), model_val, sort_by="code")
         return fig
 
     @app.callback(
