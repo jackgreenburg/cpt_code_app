@@ -11,9 +11,6 @@ from .text import plot
 
 from dash import Dash, dcc, html, dash_table
 import dash_bootstrap_components as dbc
-#import dash_core_components as dcc
-#import dash_html_components as html
-#import dash_table
 from dash.exceptions import PreventUpdate
 import fire
 import numpy as np
@@ -24,7 +21,6 @@ from plotly.graph_objects import Figure, Scatter
 from whoosh.index import open_dir
 from whoosh.qparser import MultifieldParser
 
-# JupyterDash.infer_jupyter_proxy_config()
 
 def parser(path: str, query_string: str, field_list: List[str], page: int=1, limit: int=10) -> Tuple[int, List[Dict]]:
     """
