@@ -227,9 +227,11 @@ def initiate_app(port: int=8040, debug: bool=False):
 
     app.layout = html.Div([
         dbc.Navbar([
-            dbc.Col([
-                dbc.Row([
-                    dbc.NavbarBrand("EDIT NLP CPT demo"),
+            html.Div([
+                html.Div([
+                    html.Div([
+                        dbc.NavbarBrand("EDIT NLP CPT demo"),
+                    ], style={'display': 'inline-block', 'padding': '5px'}),
                     html.Div([
                         dcc.Dropdown(
                             id='algo-dropdown',
@@ -237,19 +239,20 @@ def initiate_app(port: int=8040, debug: bool=False):
                             value=d1.current,
                             clearable=False
                         ),
-                    ], style={'width': '15%'}),
-                ], align="center")
-            ]),
-            dbc.Col([
-                dbc.Row([
-                    dbc.Label("Hide original assignment", className="mr-1"),
-                    dbc.Checklist(options=[{"value": 1}],
-                                value=[1],
-                                id="code-toggle",
-                                switch=True)
-                ], className="ml-auto"),
-            ], width = "auto", align="end"),
-
+                    ], style = {'width': '50%', 'display': 'inline-block'}),
+                ], style={'display': 'inline-block'}),
+                html.Div([
+                    html.Div([
+                        dbc.Label("Hide original assignment", className="mr-1"),
+                    ], style={'display': 'inline-block', 'padding': '5px'}),
+                    html.Div([
+                        dbc.Checklist(options=[{"value": 1}],
+                                        value=[1],
+                                        id="code-toggle",
+                                        switch=True)
+                    ], style={'display': 'inline-block'}),#, width = "3", align="end"),
+                ], style={'display': 'inline-block'}),
+            ], style={'display': 'flex', 'justify-content': 'space-between'}),
         ]),
         dbc.Col([
             dbc.Row([
