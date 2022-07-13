@@ -5,24 +5,21 @@ import os
 
 PACKAGES=[
     "xgboost==1.3.3", 
-    "dash",#==1.20.0",
-    "dash-bootstrap-components", #==0.12.2",
-    #"flask==1.1.2",
-    #"jinja2==2.11.3",
-    #"markupsafe==1.1.1",
-    #"itsdangerous==2.0.1", 
-    #"werkzeug==1.0.1",
+    "dash",
+    "dash-bootstrap-components",
     "numpy",
     "matplotlib",
     "pandas",
     "whoosh",
     "shap",
-    #"plotly==4.14.3",
     "fire"
 ]
 
 with open('README.md','r', encoding='utf-8') as f:
       long_description = f.read()
+
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
 
 setup(name='cpt_code_app',
       version='0.1',
@@ -39,4 +36,4 @@ setup(name='cpt_code_app',
       long_description=long_description,
       long_description_content_type='text/markdown',
       packages=['cpt_code_app'],
-      install_requires=PACKAGES)
+      install_requires=required)#PACKAGES)
