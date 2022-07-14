@@ -6,7 +6,7 @@ This dashboard is designed to display CPT codes that may have been missed by the
 
 ### Opening app:
 
-1. Long onto Discovery whichever open port you desire and access a compute node.
+1. Long onto Discovery on whichever open port you can and then access a compute node.
 2. Before you pip install I recommended you create a new Conda environment to ensure everything works:
 
     ```bash
