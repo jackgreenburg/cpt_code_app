@@ -6,7 +6,7 @@ This dashboard is designed to display CPT codes that may have been missed by the
 
 ### Opening app:
 
-1. Long onto Discovery on whichever open port you can and then access a compute node.
+1. Log onto Discovery on whichever open port you can and then access a compute node (I always use gv01 and haven't had any problems yet). It unfortunately cannot run locally because it needs to access files that are on Discovery.
 2. Before you pip install I recommended you create a new Conda environment to ensure everything works:
 
     ```bash
