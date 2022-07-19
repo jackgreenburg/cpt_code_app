@@ -264,8 +264,8 @@ def initiate_app(port: int=8040, debug: bool=False):
                             clearable=False,
                             style={"color": "black", 'margin-bottom': 10}),
                         dbc.Label("Index of path report:"),
-                        dbc.Input(id="path-num-input", type="number", value=report_index, debounce=True, style={'margin-bottom': 10}),
-                        dbc.Label("All predictions"),
+                        dbc.Input(id="path-num-input", type="number", min=0, step=1, value=report_index, debounce=True, style={'margin-bottom': 10}),
+                        dbc.Label("Predicted probabilities per CPT code"),
                         dcc.Graph(figure=graph_info(d1, report_index, sort_by="code"),
                                 style={'display': 'inline-block', "width": "100%", "height": "350px", "border": 0},
                                 id='scatter-graph'),
@@ -402,7 +402,7 @@ def initiate_app(port: int=8040, debug: bool=False):
             dbc.ModalFooter(
                 dbc.Button("Close", id="close", className="ms-auto", n_clicks=0)
             ),
-        ], id="modal", is_open=False, style={"max-width": "none", "width": "90%"},),
+        ], id="modal", is_open=False, size="xl"),
     ])
 
 
@@ -564,6 +564,16 @@ def initiate_app(port: int=8040, debug: bool=False):
         return fig
 
     @app.callback(
+        Output('path-num-input', 'max'),
+        Input('code-dropdown', 'options'))  # wait for output of updateModel
+    def updateReportRange(_):
+        """
+        Update the range restriction on the report number input field
+        """
+        print("setting range", len(d1.allData['y']))
+        return len(d1.allData['y'])
+    
+    @app.callback(
         Output('search-results', 'data'),
         Output('search-results', 'columns'),
         Output('search-results', 'page_count'),
@@ -572,6 +582,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         Input('code-toggle', 'value'),
         State('query-checklist', 'value'))
     def search(query, page, hideCode, fields):
+        print("fields\n", fields)
         if not query:
             return None, None, 0
         # dont forget about adjustable path
@@ -694,7 +705,6 @@ def initiate_app(port: int=8040, debug: bool=False):
         if not n_clicks:
             raise PreventUpdate
         return dcc.send_data_frame(pd.DataFrame(user_assignments).to_csv, "user_assignments.csv")
-
 
     # Run app and display result in the notebook
     app.run_server(host="localhost", port=port, debug=debug)
