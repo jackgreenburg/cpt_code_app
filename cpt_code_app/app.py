@@ -5,7 +5,7 @@ import random
 import re
 from typing import Dict, List, Tuple
 
-from .utils import load_dataset, load_pickles
+from .utils import load_dataset, load_pickles, report_to_str
 from .manager import DataManager
 from .text import plot
 
@@ -525,18 +525,7 @@ def initiate_app(port: int=8040, debug: bool=False):
 
         # note about implementation here, should just always pass pandas data series...
         # fetch the text of the pathology report, formatting if necessary
-        pathText = d1.allData['X'].iloc[reportVal]
-        if isinstance(pathText, pd.core.series.Series):
-            text = ""
-            for val in pathText.index:
-                # check if section empty --> if empty do not include header
-                if not pd.isna(pathText[val]):
-                    text += f"!{val.replace(' ', '_')}! "  # can't use a space, have to split with something else
-                    text += f"{pathText[val]} "  # add space at end
-            report = text
-        else:
-            report = d1.allData['X'].iloc[reportVal]
-
+        report = report_to_str(d1.allData['X'].iloc[reportVal])
 
         model = d1.results[model_val]["best_model"]
         sMR = d1.allData['count_mat'][reportVal]
@@ -582,21 +571,24 @@ def initiate_app(port: int=8040, debug: bool=False):
         Input('code-toggle', 'value'),
         State('query-checklist', 'value'))
     def search(query, page, hideCode, fields):
-        print("fields\n", fields)
         if not query:
             return None, None, 0
-        # dont forget about adjustable path
+        # TODO: dont forget about adjustable path
         numResults, search_out = parser("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/index", query, fields, page=page+1, limit=5)
         indices = [sO["index"] for sO in search_out]
         lenLimit = 500
 
         # TODO: look at all reports instead of subsect
-        reports = [d1.allData["X"].iloc[index] for index in indices]
+        # TODO: figure out what ^ means
+        reports = [report_to_str(d1.allData["X"].iloc[index], markdown=True) for index in indices]
         texts = [txt[:lenLimit-3] + "..." if len(txt)>lenLimit else txt for txt in reports]
         df = pd.DataFrame([{"Text": text,
                             "Codes": ", ".join(codesClean[np.where(d1.allData["y"].iloc[index]==1)]),
                             "index": index} for index, text in zip(indices, texts)])
-        return df.to_dict('records'), [{"name": head, "id": head}  for head in df.columns if head != "index" and not (head == "Codes" and hideCode)], -(numResults // -5)
+
+        data = df.to_dict('records')
+        columns = [{"name": head, "id": head, 'presentation':'markdown'}  for head in df.columns if head != "index" and not (head == "Codes" and hideCode)]
+        return data, columns, -(numResults // -5)
     
     # save user predictions to dict
     @app.callback(
