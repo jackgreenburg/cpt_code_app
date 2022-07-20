@@ -5,7 +5,7 @@ import random
 import re
 from typing import Dict, List, Tuple
 
-from .utils import load_dataset, load_pickles
+from .utils import load_dataset, load_pickles, report_to_str
 from .manager import DataManager
 from .text import plot
 
@@ -264,8 +264,8 @@ def initiate_app(port: int=8040, debug: bool=False):
                             clearable=False,
                             style={"color": "black", 'margin-bottom': 10}),
                         dbc.Label("Index of path report:"),
-                        dbc.Input(id="path-num-input", type="number", value=report_index, debounce=True, style={'margin-bottom': 10}),
-                        dbc.Label("All predictions"),
+                        dbc.Input(id="path-num-input", type="number", min=0, step=1, value=report_index, debounce=True, style={'margin-bottom': 10}),
+                        dbc.Label("Predicted probabilities per CPT code"),
                         dcc.Graph(figure=graph_info(d1, report_index, sort_by="code"),
                                 style={'display': 'inline-block', "width": "100%", "height": "350px", "border": 0},
                                 id='scatter-graph'),
@@ -402,7 +402,7 @@ def initiate_app(port: int=8040, debug: bool=False):
             dbc.ModalFooter(
                 dbc.Button("Close", id="close", className="ms-auto", n_clicks=0)
             ),
-        ], id="modal", is_open=False, style={"max-width": "none", "width": "90%"},),
+        ], id="modal", is_open=False, size="xl"),
     ])
 
 
@@ -525,18 +525,7 @@ def initiate_app(port: int=8040, debug: bool=False):
 
         # note about implementation here, should just always pass pandas data series...
         # fetch the text of the pathology report, formatting if necessary
-        pathText = d1.allData['X'].iloc[reportVal]
-        if isinstance(pathText, pd.core.series.Series):
-            text = ""
-            for val in pathText.index:
-                # check if section empty --> if empty do not include header
-                if not pd.isna(pathText[val]):
-                    text += f"!{val.replace(' ', '_')}! "  # can't use a space, have to split with something else
-                    text += f"{pathText[val]} "  # add space at end
-            report = text
-        else:
-            report = d1.allData['X'].iloc[reportVal]
-
+        report = report_to_str(d1.allData['X'].iloc[reportVal])
 
         model = d1.results[model_val]["best_model"]
         sMR = d1.allData['count_mat'][reportVal]
@@ -564,6 +553,16 @@ def initiate_app(port: int=8040, debug: bool=False):
         return fig
 
     @app.callback(
+        Output('path-num-input', 'max'),
+        Input('code-dropdown', 'options'))  # wait for output of updateModel
+    def updateReportRange(_):
+        """
+        Update the range restriction on the report number input field
+        """
+        print("setting range", len(d1.allData['y']))
+        return len(d1.allData['y'])
+    
+    @app.callback(
         Output('search-results', 'data'),
         Output('search-results', 'columns'),
         Output('search-results', 'page_count'),
@@ -574,18 +573,22 @@ def initiate_app(port: int=8040, debug: bool=False):
     def search(query, page, hideCode, fields):
         if not query:
             return None, None, 0
-        # dont forget about adjustable path
+        # TODO: dont forget about adjustable path
         numResults, search_out = parser("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/index", query, fields, page=page+1, limit=5)
         indices = [sO["index"] for sO in search_out]
         lenLimit = 500
 
         # TODO: look at all reports instead of subsect
-        reports = [d1.allData["X"].iloc[index] for index in indices]
+        # TODO: figure out what ^ means
+        reports = [report_to_str(d1.allData["X"].iloc[index], markdown=True) for index in indices]
         texts = [txt[:lenLimit-3] + "..." if len(txt)>lenLimit else txt for txt in reports]
         df = pd.DataFrame([{"Text": text,
                             "Codes": ", ".join(codesClean[np.where(d1.allData["y"].iloc[index]==1)]),
                             "index": index} for index, text in zip(indices, texts)])
-        return df.to_dict('records'), [{"name": head, "id": head}  for head in df.columns if head != "index" and not (head == "Codes" and hideCode)], -(numResults // -5)
+
+        data = df.to_dict('records')
+        columns = [{"name": head, "id": head, 'presentation':'markdown'}  for head in df.columns if head != "index" and not (head == "Codes" and hideCode)]
+        return data, columns, -(numResults // -5)
     
     # save user predictions to dict
     @app.callback(
@@ -694,7 +697,6 @@ def initiate_app(port: int=8040, debug: bool=False):
         if not n_clicks:
             raise PreventUpdate
         return dcc.send_data_frame(pd.DataFrame(user_assignments).to_csv, "user_assignments.csv")
-
 
     # Run app and display result in the notebook
     app.run_server(host="localhost", port=port, debug=debug)
