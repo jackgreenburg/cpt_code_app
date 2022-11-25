@@ -179,18 +179,20 @@ def get_status(prediction: int, truth: int) -> str:
     return f"\nStatus: {part1 + ' ' + part2}"
 
 
-def initiate_app(port: int=8040, debug: bool=False):
+def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/", debug: bool=False, use_test_data: bool=False):
     """
     port: int
         Local port.
     debug: bool
         Display debug on app.
     """
-    dataset = load_dataset()
+    assert use_test_data==False
+
+    dataset = load_dataset(os.path.join(data_dir,"paper_official_dict.pkl"))
     codes = dataset["y"].columns.values
     codesClean = np.array([code[:-1] for code in dataset["y"].columns.values])
 
-    with open("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/cpt_codes.json", "r") as f:
+    with open(os.path.join(data_dir,"cpt_codes.json"), "r") as f:
         codeDict = json.loads(f.read())
 
     # instantiate data manager
@@ -205,7 +207,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         name="38 most common, total",
         dataset=dataset,
         dx_total=dx_total,
-        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_code_models"
+        path=os.path.join(data_dir,"total_code_models")
     )
 
     # add 5 code total model to data manager
@@ -214,7 +216,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         name="primary codes, total",
         dataset=dataset,
         dx_total=dx_total,
-        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_pathologist_models"
+        path=os.path.join(data_dir,"total_pathologist_models")
     )
 
     # add models trained on only diagnostic section to data manager
@@ -579,7 +581,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if not query:
             return None, None, 0
         # TODO: dont forget about adjustable path
-        numResults, search_out = parser("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/index", query, fields, page=page+1, limit=5)
+        numResults, search_out = parser(os.path.join(data_dir,"index"), query, fields, page=page+1, limit=5)
         indices = [sO["index"] for sO in search_out]
         lenLimit = 500
 

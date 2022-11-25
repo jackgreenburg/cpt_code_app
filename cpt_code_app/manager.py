@@ -48,13 +48,13 @@ class DataManager:
         else:  # data does not already exist, so it must be loaded
             # create entry
             self.data[name] = {}
-            
+
             # initialize dict to store explainer and shap values so they do not have to be generated again
             self.data[name]["explainerDict"] = {}
 
             # load pickled models
             self.data[name]["results"] = load_pickles(path)
-            
+
             if  self.data[name]["results"][0]["best_model"].objective == "multi:softprob":
                 self.data[name]["codes"] = ["88302", "88304", "88305", "88307", "88309"]
 
@@ -66,7 +66,7 @@ class DataManager:
                                               "X": dataset[dx_total]["X"][remove_bool],
                                               "count_mat": dataset[dx_total]["count_mat"][remove_bool],
                                               "y": dataset["y"][["88302 ","88304 ","88305 ","88307 ","88309 "]][remove_bool]}
-            
+
             elif self.data[name]["results"][0]["best_model"].objective == "binary:logistic":
 #                 self.data[name]["codes"] = [code[:-1] for code in dataset["y"].columns.values]
                 self.data[name]["codes"] = [result["code"] for result in self.data[name]["results"]]
@@ -84,6 +84,7 @@ class DataManager:
         self.explainerDict = self.data[name]["explainerDict"]
         self.codes = self.data[name]["codes"]
         self.allData = self.data[name]["allData"]
-        
+
+
 if __name__ == "__main__":
     print("manager.py main.")
