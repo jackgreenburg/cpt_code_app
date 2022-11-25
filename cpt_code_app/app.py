@@ -8,7 +8,9 @@ from typing import Dict, List, Tuple
 from .utils import load_dataset, load_pickles, report_to_str
 from .manager import DataManager
 from .text import plot
+from .users import USERNAME_PASSWORD_PAIRS
 
+import dash_auth
 from dash import Dash, dcc, html, dash_table
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
@@ -190,10 +192,10 @@ def initiate_app(port: int=8040, debug: bool=False):
 
     with open("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/cpt_codes.json", "r") as f:
         codeDict = json.loads(f.read())
-    
+
     # instantiate data manager
     d1 = DataManager()
-    
+
     # create dict to store user preds
     user_assignments = {}
 
@@ -201,17 +203,17 @@ def initiate_app(port: int=8040, debug: bool=False):
     dx_total = "total"
     d1.set(
         name="38 most common, total",
-        dataset=dataset, 
-        dx_total=dx_total, 
+        dataset=dataset,
+        dx_total=dx_total,
         path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_code_models"
     )
 
     # add 5 code total model to data manager
     dx_total = "total"
     d1.set(
-        name="primary codes, total", 
-        dataset=dataset, 
-        dx_total=dx_total, 
+        name="primary codes, total",
+        dataset=dataset,
+        dx_total=dx_total,
         path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_pathologist_models"
     )
 
@@ -224,7 +226,10 @@ def initiate_app(port: int=8040, debug: bool=False):
     report_index = 17
     # Build App
     app = Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
-
+    auth = dash_auth.BasicAuth(
+            app,
+            USERNAME_PASSWORD_PAIRS
+            )
     app.layout = html.Div([
         dbc.Navbar(dbc.Container([
             dbc.Row(
@@ -460,8 +465,8 @@ def initiate_app(port: int=8040, debug: bool=False):
             prediction = d1.results[model_val]["pp"]["preds"][reportVal]
 
         # calculate predictions
-#         prediction = d1.results[model_val]["best_model"].predict(d1.allData['count_mat'][reportVal], output_margin=False)[0]        
-        
+#         prediction = d1.results[model_val]["best_model"].predict(d1.allData['count_mat'][reportVal], output_margin=False)[0]
+
         blockText = f"Prediction: {('does not contain', 'contains')[prediction]} code {d1.codes[output_index]}"
         if len(d1.results) != 1:
             blockText += get_status(prediction, d1.codes[model_val] in correctCodes)
@@ -561,7 +566,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         """
         print("setting range", len(d1.allData['y']))
         return len(d1.allData['y'])
-    
+
     @app.callback(
         Output('search-results', 'data'),
         Output('search-results', 'columns'),
@@ -589,7 +594,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         data = df.to_dict('records')
         columns = [{"name": head, "id": head, 'presentation':'markdown'}  for head in df.columns if head != "index" and not (head == "Codes" and hideCode)]
         return data, columns, -(numResults // -5)
-    
+
     # save user predictions to dict
     @app.callback(
         Output('code-dropdown', 'placeholder'),  # basically a dummy ouptut
@@ -600,7 +605,7 @@ def initiate_app(port: int=8040, debug: bool=False):
             user_assignments[d1.current] = {}
         user_assignments[d1.current][currIndex] = predicted
         return "Input codes here..."
-    
+
     # update user assignments dropdown
     @app.callback(
         Output('code-dropdown', 'value'),
@@ -611,7 +616,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if d1.current in user_assignments and report_val in user_assignments[d1.current]:
             user_assignments_to_return = user_assignments[d1.current][report_val]
         return user_assignments_to_return
-    
+
     @app.callback(
         Output("path-num-input", "value"),
         Output("next-button", "n_clicks"),
@@ -662,7 +667,7 @@ def initiate_app(port: int=8040, debug: bool=False):
             return index, 0, fText
         else:  # handle first call (nothing selected)
             raise PreventUpdate
-    
+
     @app.callback(
         Output('search-input', 'disabled'),
         Output('search-input', 'placeholder'),
@@ -689,7 +694,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if n1 or n2:
             return not is_open
         return is_open
-    
+
     @app.callback(
         Output("download-data", "data"),
         Input("download-button", "n_clicks"))
@@ -703,6 +708,6 @@ def initiate_app(port: int=8040, debug: bool=False):
 
 def main():
     fire.Fire(initiate_app)
-    
+
 if __name__ == "__main__":
     main()
