@@ -675,6 +675,8 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
         Output('search-input', 'placeholder'),
         Input('algo-dropdown', 'value'))
     def update_searchbox(algo_value):
+        # enforce, indices need to match datasets to use
+        algo_value = "38 most common, total"
         if algo_value == "38 most common, total":
             return False, "Search for report"
         else:
