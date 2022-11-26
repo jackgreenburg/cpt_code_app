@@ -340,7 +340,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 id="accuracy-filter",
                                 style={"margin-left": "10px"}
                             ),
-                        ], width=1),
+                        ], width=2),
                         dbc.Col([
                             dbc.Label(" "),
                             dbc.RadioItems(
@@ -353,7 +353,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 id="pos-neg-filter",
                                 style={"margin-left": "10px"}
                             )
-                        ], width=1),
+                        ], width=2),
                         dbc.Col([
                             dbc.Label(" "),
                             html.Div(dbc.RadioItems(
@@ -375,7 +375,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 placeholder = "Input code here...",
                                 style={"margin-left": "5px", "margin-right": "10px"}
                             ),
-                        ], width=8)
+                        ], width=6)
                     ]),
                     dbc.Button("Next report", id="next-button", n_clicks=0, className="ml-auto", style={'float': 'right','margin': 'auto'}, color="success"),
                 ]), outline=True, color="primary", style={"padding": ".5rem"}),
