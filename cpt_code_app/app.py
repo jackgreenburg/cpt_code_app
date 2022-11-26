@@ -71,16 +71,15 @@ def find_filtered_report(false_true: int, neg_pos: int, under_over: int, y: List
     List[int]
         list of indexes that meet filter specifications
     """
-    if under_over:
-        neg_pos=0
-        bool_indices=np.where(underbill if under_over==1 else overbill)[0]
     if neg_pos == 2:
         # show both true and false
         value_indices = [i for i in range(len(y))]
     else:
         # find where y is equal to 0 (negative) or 1 (positive)
         value_indices = np.where(preds == neg_pos)[0]
-
+    if under_over:
+        false_true=0
+        value_indices=np.where(underbill if under_over==1 else overbill)[0]
     if false_true == 2:
         # show both positive and negative
         bool_indices = [i for i in range(len(y))]
@@ -336,7 +335,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 id="accuracy-filter",
                                 style={"margin-left": "10px"}
                             ),
-                        ], width=1.5),
+                        ], width=1),
                         dbc.Col([
                             dbc.Label(" "),
                             dbc.RadioItems(
@@ -349,7 +348,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 id="pos-neg-filter",
                                 style={"margin-left": "10px"}
                             )
-                        ], width=1.5),
+                        ], width=1),
                         dbc.Col([
                             dbc.Label(" "),
                             html.Div(dbc.RadioItems(
@@ -371,7 +370,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 placeholder = "Input code here...",
                                 style={"margin-left": "5px", "margin-right": "10px"}
                             ),
-                        ], width=7)
+                        ], width=8)
                     ]),
                     dbc.Button("Next report", id="next-button", n_clicks=0, className="ml-auto", style={'float': 'right','margin': 'auto'}, color="success"),
                 ]), outline=True, color="primary", style={"padding": ".5rem"}),
