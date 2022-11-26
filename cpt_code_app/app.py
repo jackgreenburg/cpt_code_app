@@ -53,7 +53,7 @@ def parser(path: str, query_string: str, field_list: List[str], page: int=1, lim
         return len(search_out), out
 
 
-def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: List[int]) -> List[int]:
+def find_filtered_report(false_true: int, neg_pos: int, under_over: int, y: List[int], preds: List[int], underbill = None, overbill = None) -> List[int]:
     """
     Returns filtered list of path reports
 
@@ -61,6 +61,8 @@ def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: Lis
         0->False, 1->True, 2->both
     neg_pos: int
         0->negative, 1->positive, 2->both
+    under_over: int
+        0->neither, 1->under, 2->over
     y: List[int]
         array of correct codes for all reports for designated code
     preds: List[int]
@@ -69,6 +71,9 @@ def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: Lis
     List[int]
         list of indexes that meet filter specifications
     """
+    if under_over:
+        neg_pos=0
+        bool_values=underbill if under_over==1 else overbill
     if neg_pos == 2:
         # show both true and false
         value_indices = [i for i in range(len(y))]
@@ -331,7 +336,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 id="accuracy-filter",
                                 style={"margin-left": "10px"}
                             ),
-                        ], width=2),
+                        ], width=1.5),
                         dbc.Col([
                             dbc.Label(" "),
                             dbc.RadioItems(
@@ -344,6 +349,19 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 id="pos-neg-filter",
                                 style={"margin-left": "10px"}
                             )
+                        ], width=1.5),
+                        dbc.Col([
+                            dbc.Label(" "),
+                            html.Div(dbc.RadioItems(
+                                options=[
+                                    {"label": "Underbill candidate", "value": 1},
+                                    {"label": "Overbill candidate", "value": 2},
+                                    {"label": "Neither", "value": 0},
+                                ],
+                                value=0,
+                                id="under-over-filter",
+                                style={"margin-left": "10px"}
+                            ),id='under-over-div')
                         ], width=2),
                         dbc.Col([
                             dbc.Label("Using model trained to detect:"),
@@ -353,7 +371,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
                                 placeholder = "Input code here...",
                                 style={"margin-left": "5px", "margin-right": "10px"}
                             ),
-                        ], width=8)
+                        ], width=7)
                     ]),
                     dbc.Button("Next report", id="next-button", n_clicks=0, className="ml-auto", style={'float': 'right','margin': 'auto'}, color="success"),
                 ]), outline=True, color="primary", style={"padding": ".5rem"}),
@@ -418,6 +436,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
         Output('model-dropdown', 'options'),
         Output('filter-dropdown', 'options'),
         Output('code-dropdown', 'options'),
+        Output('under-over-div', 'hidden'),
         Input('scatter-graph', 'clickData'),
         Input('algo-dropdown', 'value'),
         State('model-dropdown', 'value'),
@@ -440,7 +459,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
         assignment_options = [{"label": f"{c}: {codeDict[c]}", "value": c} for c in d1.codes]
 
         options = [{'label': f'SHAP values for code {code}', 'value': i} for i, code in enumerate(d1.codes)]
-        return int(value), options, filter_options, assignment_options
+        return int(value), options, filter_options, assignment_options, (algo_value == "38 most common, total")
 
     # update info
     @app.callback(
@@ -627,10 +646,12 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
         Input("next-button", "n_clicks"),
         State("accuracy-filter", "value"),
         State("pos-neg-filter", "value"),
+        State("under-over-filter", "value"),
         State("filter-dropdown", "value"),
         State('search-results', 'data'),
-        State('path-num-input', 'value'))
-    def getSearch(selected, next_button_clicks, filterAcc, filterPosNeg, filterModel, tableData, currIndex):
+        State('path-num-input', 'value'),
+        State('algo-dropdown', 'value'))
+    def getSearch(selected, next_button_clicks, filterAcc, filterPosNeg, filterUnderOver, filterModel, tableData, currIndex, algo_value):
         """
         Trigger update of page if a search result clicked, if code hide switch toggled, or if next button
         """
@@ -647,13 +668,18 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
             filter_kwargs = dict(
                 false_true = filterAcc,
                 neg_pos = filterPosNeg,
+                under_over = int(filterUnderOver*float(algo_value!="38 most common, total")),
                 y = d1.allData["y"][d1.codes[filterModel] + " "],
             )
 
             if d1.results[0]["best_model"].objective == "multi:softprob":
                 filter_kwargs["preds"] = d1.results[0]["pp"]["preds"][filterModel]
+                y_pred,y_true=np.array(d1.results[0]["pp"]["preds"]).T.argmax(1),d1.allData["y"][["88302 ","88304 ","88305 ","88307 ","88309 "]].values.argmax(1)
+                filter_kwargs['underbill']=y_pred>y_true
+                filter_kwargs['overbill']=y_pred<y_true
             else:
                 filter_kwargs["preds"] = d1.results[filterModel]["pp"]["preds"]
+                filter_kwargs['underbill']=filter_kwargs['overbill']=None
             indices = find_filtered_report(**filter_kwargs)
 
             index_of_index, found_index = 0, 0
