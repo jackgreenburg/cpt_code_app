@@ -73,7 +73,7 @@ def find_filtered_report(false_true: int, neg_pos: int, under_over: int, y: List
     """
     if under_over:
         neg_pos=0
-        bool_values=underbill if under_over==1 else overbill
+        bool_indices=np.where(underbill if under_over==1 else overbill)[0]
     if neg_pos == 2:
         # show both true and false
         value_indices = [i for i in range(len(y))]
