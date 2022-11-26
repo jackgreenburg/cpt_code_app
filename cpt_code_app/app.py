@@ -211,7 +211,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
     user_assignments = {}
 
     # add models trained on whole reports to data manager
-    if not use_test_data or True:
+    if not use_test_data:
         dx_total = "total"
         d1.set(
             name="38 most common, total",
