@@ -1,6 +1,5 @@
 import os
 import pickle
-import pysnooper
 
 from .utils import load_dataset, load_pickles
 
@@ -40,7 +39,6 @@ class DataManager:
         self.codes = None
         self.allData = None
 
-    @pysnooper.snoop()
     def set(self, name, dataset=None, dx_total=None, path=None):
         if self.current == name:
             return True
