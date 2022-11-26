@@ -71,15 +71,20 @@ def find_filtered_report(false_true: int, neg_pos: int, under_over: int, y: List
     List[int]
         list of indexes that meet filter specifications
     """
+    if under_over:
+        false_true=0
+        neg_pos=0
+        under_over_indices=np.where(underbill if under_over==1 else overbill)[0]
+    else:
+        value_indices = [i for i in range(len(y))]
+
     if neg_pos == 2:
         # show both true and false
         value_indices = [i for i in range(len(y))]
     else:
         # find where y is equal to 0 (negative) or 1 (positive)
         value_indices = np.where(preds == neg_pos)[0]
-    if under_over:
-        false_true=0
-        value_indices=np.where(underbill if under_over==1 else overbill)[0]
+
     if false_true == 2:
         # show both positive and negative
         bool_indices = [i for i in range(len(y))]
@@ -89,7 +94,7 @@ def find_filtered_report(false_true: int, neg_pos: int, under_over: int, y: List
 
         # find in that list where predictions were either false or true
         bool_indices = np.where(bool_values == bool(false_true))[0]
-    return np.intersect1d(value_indices, bool_indices)
+    return np.intersect1d(np.intersect1d(value_indices, bool_indices),under_over_indices)
 
 
 def graph_info(data_obj, reportVal: int, hideCode: bool=False, model_val: int=-1, sort_by="prediction") -> Figure:
