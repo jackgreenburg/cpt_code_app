@@ -76,7 +76,7 @@ def find_filtered_report(false_true: int, neg_pos: int, under_over: int, y: List
         neg_pos=0
         under_over_indices=np.where(underbill if under_over==1 else overbill)[0]
     else:
-        value_indices = [i for i in range(len(y))]
+        under_over_indices = [i for i in range(len(y))]
 
     if neg_pos == 2:
         # show both true and false
