@@ -195,7 +195,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
     debug: bool
         Display debug on app.
     """
-    assert use_test_data==False
+    # assert use_test_data==False
 
     dataset = load_dataset(os.path.join(data_dir,"paper_official_dict.pkl"))
     codes = dataset["y"].columns.values
@@ -211,13 +211,14 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
     user_assignments = {}
 
     # add models trained on whole reports to data manager
-    dx_total = "total"
-    d1.set(
-        name="38 most common, total",
-        dataset=dataset,
-        dx_total=dx_total,
-        path=os.path.join(data_dir,"total_code_models")
-    )
+    if not use_test_data:
+        dx_total = "total"
+        d1.set(
+            name="38 most common, total",
+            dataset=dataset,
+            dx_total=dx_total,
+            path=os.path.join(data_dir,"total_code_models")
+        )
 
     # add 5 code total model to data manager
     dx_total = "total"
