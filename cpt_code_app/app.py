@@ -188,7 +188,7 @@ def get_status(prediction: int, truth: int) -> str:
     return f"\nStatus: {part1 + ' ' + part2}"
 
 
-def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/", debug: bool=False, use_test_data: bool=False):
+def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/", debug: bool=False, use_test_data: bool=False, return_app: bool=False):
     """
     port: int
         Local port.
@@ -736,6 +736,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
             raise PreventUpdate
         return dcc.send_data_frame(pd.DataFrame(user_assignments).to_csv, "user_assignments.csv")
 
+    if return_app: return app
     # Run app and display result in the notebook
     app.run_server(host="localhost", port=port, debug=debug)
 
