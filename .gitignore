@@ -1,4 +1,5 @@
 *.pyc
 *.pkl
 *.sh
-
+cpt_code_app.egg-info
+build

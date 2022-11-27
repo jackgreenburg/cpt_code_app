@@ -8,7 +8,9 @@ from typing import Dict, List, Tuple
 from .utils import load_dataset, load_pickles, report_to_str
 from .manager import DataManager
 from .text import plot
+from .users import USERNAME_PASSWORD_PAIRS
 
+import dash_auth
 from dash import Dash, dcc, html, dash_table
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
@@ -51,7 +53,7 @@ def parser(path: str, query_string: str, field_list: List[str], page: int=1, lim
         return len(search_out), out
 
 
-def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: List[int]) -> List[int]:
+def find_filtered_report(false_true: int, neg_pos: int, under_over: int, y: List[int], preds: List[int], underbill = None, overbill = None) -> List[int]:
     """
     Returns filtered list of path reports
 
@@ -59,6 +61,8 @@ def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: Lis
         0->False, 1->True, 2->both
     neg_pos: int
         0->negative, 1->positive, 2->both
+    under_over: int
+        0->neither, 1->under, 2->over
     y: List[int]
         array of correct codes for all reports for designated code
     preds: List[int]
@@ -67,6 +71,13 @@ def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: Lis
     List[int]
         list of indexes that meet filter specifications
     """
+    if under_over:
+        false_true=0
+        neg_pos=0
+        under_over_indices=np.where(underbill if under_over==1 else overbill)[0]
+    else:
+        under_over_indices = [i for i in range(len(y))]
+
     if neg_pos == 2:
         # show both true and false
         value_indices = [i for i in range(len(y))]
@@ -83,7 +94,7 @@ def find_filtered_report(false_true: int, neg_pos: int, y: List[int], preds: Lis
 
         # find in that list where predictions were either false or true
         bool_indices = np.where(bool_values == bool(false_true))[0]
-    return np.intersect1d(value_indices, bool_indices)
+    return np.intersect1d(np.intersect1d(value_indices, bool_indices),under_over_indices)
 
 
 def graph_info(data_obj, reportVal: int, hideCode: bool=False, model_val: int=-1, sort_by="prediction") -> Figure:
@@ -177,42 +188,45 @@ def get_status(prediction: int, truth: int) -> str:
     return f"\nStatus: {part1 + ' ' + part2}"
 
 
-def initiate_app(port: int=8040, debug: bool=False):
+def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/", debug: bool=False, use_test_data: bool=False, return_app: bool=False):
     """
     port: int
         Local port.
     debug: bool
         Display debug on app.
     """
-    dataset = load_dataset()
+    # assert use_test_data==False
+
+    dataset = load_dataset(os.path.join(data_dir,"paper_official_dict.pkl"))
     codes = dataset["y"].columns.values
     codesClean = np.array([code[:-1] for code in dataset["y"].columns.values])
 
-    with open("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/cpt_codes.json", "r") as f:
+    with open(os.path.join(data_dir,"cpt_codes.json"), "r") as f:
         codeDict = json.loads(f.read())
-    
+
     # instantiate data manager
     d1 = DataManager()
-    
+
     # create dict to store user preds
     user_assignments = {}
 
     # add models trained on whole reports to data manager
-    dx_total = "total"
-    d1.set(
-        name="38 most common, total",
-        dataset=dataset, 
-        dx_total=dx_total, 
-        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_code_models"
-    )
+    if not use_test_data or True:
+        dx_total = "total"
+        d1.set(
+            name="38 most common, total",
+            dataset=dataset,
+            dx_total=dx_total,
+            path=os.path.join(data_dir,"total_code_models")
+        )
 
     # add 5 code total model to data manager
     dx_total = "total"
     d1.set(
-        name="primary codes, total", 
-        dataset=dataset, 
-        dx_total=dx_total, 
-        path="/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/total_pathologist_models"
+        name="primary codes, total",
+        dataset=dataset,
+        dx_total=dx_total,
+        path=os.path.join(data_dir,"total_pathologist_models")
     )
 
     # add models trained on only diagnostic section to data manager
@@ -224,7 +238,10 @@ def initiate_app(port: int=8040, debug: bool=False):
     report_index = 17
     # Build App
     app = Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
-
+    auth = dash_auth.BasicAuth(
+            app,
+            USERNAME_PASSWORD_PAIRS
+            )
     app.layout = html.Div([
         dbc.Navbar(dbc.Container([
             dbc.Row(
@@ -339,6 +356,19 @@ def initiate_app(port: int=8040, debug: bool=False):
                             )
                         ], width=2),
                         dbc.Col([
+                            dbc.Label(" "),
+                            html.Div(dbc.RadioItems(
+                                options=[
+                                    {"label": "Underbill candidate", "value": 1},
+                                    {"label": "Overbill candidate", "value": 2},
+                                    {"label": "Neither", "value": 0},
+                                ],
+                                value=0,
+                                id="under-over-filter",
+                                style={"margin-left": "10px"}
+                            ),id='under-over-div')
+                        ], width=2),
+                        dbc.Col([
                             dbc.Label("Using model trained to detect:"),
                             dcc.Dropdown(
                                 id='filter-dropdown',
@@ -346,7 +376,7 @@ def initiate_app(port: int=8040, debug: bool=False):
                                 placeholder = "Input code here...",
                                 style={"margin-left": "5px", "margin-right": "10px"}
                             ),
-                        ], width=8)
+                        ], width=6)
                     ]),
                     dbc.Button("Next report", id="next-button", n_clicks=0, className="ml-auto", style={'float': 'right','margin': 'auto'}, color="success"),
                 ]), outline=True, color="primary", style={"padding": ".5rem"}),
@@ -411,6 +441,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         Output('model-dropdown', 'options'),
         Output('filter-dropdown', 'options'),
         Output('code-dropdown', 'options'),
+        Output('under-over-div', 'hidden'),
         Input('scatter-graph', 'clickData'),
         Input('algo-dropdown', 'value'),
         State('model-dropdown', 'value'),
@@ -433,7 +464,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         assignment_options = [{"label": f"{c}: {codeDict[c]}", "value": c} for c in d1.codes]
 
         options = [{'label': f'SHAP values for code {code}', 'value': i} for i, code in enumerate(d1.codes)]
-        return int(value), options, filter_options, assignment_options
+        return int(value), options, filter_options, assignment_options, (algo_value == "38 most common, total")
 
     # update info
     @app.callback(
@@ -462,8 +493,8 @@ def initiate_app(port: int=8040, debug: bool=False):
             prediction = d1.results[model_val]["pp"]["preds"][reportVal]
 
         # calculate predictions
-#         prediction = d1.results[model_val]["best_model"].predict(d1.allData['count_mat'][reportVal], output_margin=False)[0]        
-        
+#         prediction = d1.results[model_val]["best_model"].predict(d1.allData['count_mat'][reportVal], output_margin=False)[0]
+
         blockText = f"Prediction: {('does not contain', 'contains')[prediction]} code {d1.codes[output_index]}"
         if len(d1.results) != 1:
             blockText += get_status(prediction, d1.codes[model_val] in correctCodes)
@@ -565,7 +596,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         """
         print("setting range", len(d1.allData['y']))
         return len(d1.allData['y'])
-    
+
     @app.callback(
         Output('search-results', 'data'),
         Output('search-results', 'columns'),
@@ -578,7 +609,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if not query:
             return None, None, 0
         # TODO: dont forget about adjustable path
-        numResults, search_out = parser("/dartfs/rc/nosnapshots/V/VaickusL-nb/EDIT_Students/projects/cpt_code_app_data/data/index", query, fields, page=page+1, limit=5)
+        numResults, search_out = parser(os.path.join(data_dir,"index"), query, fields, page=page+1, limit=5)
         indices = [sO["index"] for sO in search_out]
         lenLimit = 500
 
@@ -593,7 +624,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         data = df.to_dict('records')
         columns = [{"name": head, "id": head, 'presentation':'markdown'}  for head in df.columns if head != "index" and not (head == "Codes" and hideCode)]
         return data, columns, -(numResults // -5)
-    
+
     # save user predictions to dict
     @app.callback(
         Output('code-dropdown', 'placeholder'),  # basically a dummy ouptut
@@ -604,7 +635,7 @@ def initiate_app(port: int=8040, debug: bool=False):
             user_assignments[d1.current] = {}
         user_assignments[d1.current][currIndex] = predicted
         return "Input codes here..."
-    
+
     # update user assignments dropdown
     @app.callback(
         Output('code-dropdown', 'value'),
@@ -615,7 +646,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if d1.current in user_assignments and report_val in user_assignments[d1.current]:
             user_assignments_to_return = user_assignments[d1.current][report_val]
         return user_assignments_to_return
-    
+
     @app.callback(
         Output("path-num-input", "value"),
         Output("next-button", "n_clicks"),
@@ -624,10 +655,12 @@ def initiate_app(port: int=8040, debug: bool=False):
         Input("next-button", "n_clicks"),
         State("accuracy-filter", "value"),
         State("pos-neg-filter", "value"),
+        State("under-over-filter", "value"),
         State("filter-dropdown", "value"),
         State('search-results', 'data'),
-        State('path-num-input', 'value'))
-    def getSearch(selected, next_button_clicks, filterAcc, filterPosNeg, filterModel, tableData, currIndex):
+        State('path-num-input', 'value'),
+        State('algo-dropdown', 'value'))
+    def getSearch(selected, next_button_clicks, filterAcc, filterPosNeg, filterUnderOver, filterModel, tableData, currIndex, algo_value):
         """
         Trigger update of page if a search result clicked, if code hide switch toggled, or if next button
         """
@@ -644,13 +677,18 @@ def initiate_app(port: int=8040, debug: bool=False):
             filter_kwargs = dict(
                 false_true = filterAcc,
                 neg_pos = filterPosNeg,
+                under_over = int(filterUnderOver*float(algo_value!="38 most common, total")),
                 y = d1.allData["y"][d1.codes[filterModel] + " "],
             )
 
             if d1.results[0]["best_model"].objective == "multi:softprob":
                 filter_kwargs["preds"] = d1.results[0]["pp"]["preds"][filterModel]
+                y_pred,y_true=np.array(d1.results[0]["pp"]["preds"]).T.argmax(1),d1.allData["y"][["88302 ","88304 ","88305 ","88307 ","88309 "]].values.argmax(1)
+                filter_kwargs['underbill']=y_pred>y_true
+                filter_kwargs['overbill']=y_pred<y_true
             else:
                 filter_kwargs["preds"] = d1.results[filterModel]["pp"]["preds"]
+                filter_kwargs['underbill']=filter_kwargs['overbill']=None
             indices = find_filtered_report(**filter_kwargs)
 
             index_of_index, found_index = 0, 0
@@ -666,13 +704,14 @@ def initiate_app(port: int=8040, debug: bool=False):
             return index, 0, fText
         else:  # handle first call (nothing selected)
             raise PreventUpdate
-    
+
     @app.callback(
         Output('search-input', 'disabled'),
         Output('search-input', 'placeholder'),
         Input('algo-dropdown', 'value'))
     def update_searchbox(algo_value):
-        if algo_value == "38 most common, total":
+        # enforce, indices need to match datasets to use
+        if algo_value == "38 most common, total" or True:
             return False, "Search for report"
         else:
             return True, "Corpus search not available for this model"
@@ -693,7 +732,7 @@ def initiate_app(port: int=8040, debug: bool=False):
         if n1 or n2:
             return not is_open
         return is_open
-    
+
     @app.callback(
         Output("download-data", "data"),
         Input("download-button", "n_clicks"))
@@ -702,11 +741,12 @@ def initiate_app(port: int=8040, debug: bool=False):
             raise PreventUpdate
         return dcc.send_data_frame(pd.DataFrame(user_assignments).to_csv, "user_assignments.csv")
 
+    if return_app: return app
     # Run app and display result in the notebook
     app.run_server(host="localhost", port=port, debug=debug)
 
 def main():
     fire.Fire(initiate_app)
-    
+
 if __name__ == "__main__":
     main()
