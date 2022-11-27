@@ -453,8 +453,10 @@ def initiate_app(port: int=8040, debug: bool=False):
             output_index = model_val
             model_val = 0
             correctCodes = [["88302 ","88304 ","88305 ","88307 ","88309 "][index][:-1] for index in correctCodesIndex]
-            prediction = d1.results[model_val]["pp"]["preds"][output_index][reportVal]
+            prediction_indices = [d1.results[0]["pp"]["preds"][i][reportVal] for i in range(len(d1.codes))]
 
+            prediction_bool = prediction_indices[output_index]
+            prediction=prediction_bool
         else:
             correctCodes = [codes[index][:-1] for index in correctCodesIndex]
             prediction = d1.results[model_val]["pp"]["preds"][reportVal]
@@ -472,11 +474,13 @@ def initiate_app(port: int=8040, debug: bool=False):
                 blockText += "\nPLEASE NOTE: This algorithm was only trained to predict on reports containing exactly one of the following codes:"
                 blockText += f"88302, 88304, 88305, 88307, 88309. This report contains {len(correct_indices)} of those codes."
             if not hideCode:  #XXX: hmmm
+                coder_assigned_code = correctCodes[0]
+                model_assigned_code = d1.codes[prediction_indices.index(1)]
                 if len(correct_indices) == 1:
                     part = "correct billing relative to original coder"
-                    if prediction < correct_indices[0]:
+                    if model_assigned_code < coder_assigned_code:
                         part = "underbilling relative to original coder"
-                    if prediction > correct_indices[0]:
+                    if model_assigned_code > coder_assigned_code:
                         part = "overbilling relative to original coder"
                     blockText += f"\nStatus: {part}"
         if not hideCode:
