@@ -35,7 +35,6 @@ class DataManager:
         self.current = None
         self.results = None
 #         self.labeledSparseMatrix = None
-        self.explainerDict = None
         self.codes = None
         self.allData = None
 
@@ -48,9 +47,6 @@ class DataManager:
         else:  # data does not already exist, so it must be loaded
             # create entry
             self.data[name] = {}
-
-            # initialize dict to store explainer and shap values so they do not have to be generated again
-            self.data[name]["explainerDict"] = {}
 
             # load pickled models
             self.data[name]["results"] = load_pickles(path)
@@ -81,7 +77,6 @@ class DataManager:
         self.current = name
         self.results = self.data[name]["results"]
 #         self.labeledSparseMatrix = self.data[name]["labeledSparseMatrix"]
-        self.explainerDict = self.data[name]["explainerDict"]
         self.codes = self.data[name]["codes"]
         self.allData = self.data[name]["allData"]
 

@@ -545,12 +545,6 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
             output_index = model_val
             model_val = 0
 
-        if model_val not in d1.explainerDict:
-            # if the model has not yet been explained, explain it and add it the dictionary
-            # TODO: explainerDict does not appear to be getting updated
-            explainer = shap.TreeExplainer(d1.results[model_val]["best_model"])
-            d1.explainerDict[model_val] = {"explainer": explainer}
-
         # create plot header
         if output_index:
             header = f"SHAP analysis for the prediction CPT code {d1.codes[output_index]} on path report #{reportVal}"
@@ -573,7 +567,7 @@ def initiate_app(port: int=8040, data_dir: str="/dartfs/rc/nosnapshots/V/Vaickus
         srcBig = src.replace(f"font-size: {text_size + 2}px", "font-size: 24px")  # replace headers
         srcBig = srcBig.replace(f"font-size: {text_size}px", "font-size: 22px")  # replace main
         srcBig = srcBig.replace(f"font-size: {text_size - 2}px", "font-size: 20px")  # replace supertext
-
+        
         return header, src, None, header, srcBig
 
     @app.callback(
