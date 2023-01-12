@@ -6,7 +6,7 @@ This dashboard is designed to display CPT codes that may have been missed by the
 
 ### Opening app:
 
-1. Log onto Discovery on whichever open port you can and then access a compute node. **It unfortunately cannot run locally because it needs to access files that are on Discovery.**
+1. Log onto HPC/Discovery (Dartmouth) on whichever open port you can and then access a compute node. The program requires access to files that are formatted appropriately for usage; examples of these files are on HPC/Discovery (Dartmouth). We plan to provide a wiki detailing how to generate such a file.
 
     ```bash
     ssh <NetID>@discovery7 -L <port number>:localhost:<port number>
